@@ -1,0 +1,105 @@
+#!/bin/busybox sh
+
+/bin/busybox --install
+
+mount -t proc proc /proc
+mount -t sysfs none /sys
+mdev -s
+
+mkdir -p /etc/network
+cat > /etc/network/interfaces << "EOF"
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+EOFs
+
+mkdir -p /etc/network
+cat > /etc/network/interfaces << "EOF"
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+EOFc/
+
+cat > /usr/share/udhcpc/default.script << "EOF"
+#!/bin/sh
+# udhcpc Interface Configuration
+# Based on http://lists.debian.org/debian-boot/2002/11/msg00500.html
+# udhcpc script edited by Tim Riker <Tim@Rikers.org>
+
+[ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
+
+RESOLV_CONF="/etc/resolv.conf"
+[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+[ -n "$subnet" ] && NETMASK="netmask $subnet"
+
+case "$1" in
+        deconfig)
+                /sbin/ifconfig $interface 0.0.0.0
+                ;;
+
+        renew|bound)
+                /sbin/ifconfig $interface $ip $BROADCAST $NETMASK
+
+                if [ -n "$router" ] ; then
+                        while route del default gw 0.0.0.0 dev $interface ; do
+                                true
+                        done
+
+                        for i in $router ; do
+                                route add default gw $i dev $interface
+                        done
+                fi
+
+                echo -n > $RESOLV_CONF
+                [ -n "$domain" ] && echo search $domain >> $RESOLV_CONF
+                for i in $dns ; do
+                        echo nameserver $i >> $RESOLV_CONF
+                done
+                ;;
+esac
+
+exit 0
+EOF
+
+chmod +x /usr/share/udhcpc/default.script
+
+ifconfig eth0 up
+udhcpc -i eth0
+
+echo "
+                                                                                                
+                                                                                                
+   SSSSSSSSSSSSSSS                  BBBBBBBBBBBBBBBBB   UUUUUUUU     UUUUUUUU   SSSSSSSSSSSSSSS 
+ SS:::::::::::::::S                 B::::::::::::::::B  U::::::U     U::::::U SS:::::::::::::::S
+S:::::SSSSSS::::::S                 B::::::BBBBBB:::::B U::::::U     U::::::US:::::SSSSSS::::::S
+S:::::S     SSSSSSS                 BB:::::B     B:::::BUU:::::U     U:::::UUS:::::S     SSSSSSS
+S:::::S                               B::::B     B:::::B U:::::U     U:::::U S:::::S            
+S:::::S                               B::::B     B:::::B U:::::D     D:::::U S:::::S            
+ S::::SSSS                            B::::BBBBBB:::::B  U:::::D     D:::::U  S::::SSSS         
+  SS::::::SSSSS     ---------------   B:::::::::::::BB   U:::::D     D:::::U   SS::::::SSSSS    
+    SSS::::::::SS   -:::::::::::::-   B::::BBBBBB:::::B  U:::::D     D:::::U     SSS::::::::SS  
+       SSSSSS::::S  ---------------   B::::B     B:::::B U:::::D     D:::::U        SSSSSS::::S 
+            S:::::S                   B::::B     B:::::B U:::::D     D:::::U             S:::::S
+            S:::::S                   B::::B     B:::::B U::::::U   U::::::U             S:::::S
+SSSSSSS     S:::::S                 BB:::::BBBBBB::::::B U:::::::UUU:::::::U SSSSSSS     S:::::S
+S::::::SSSSSS:::::S                 B:::::::::::::::::B   UU:::::::::::::UU  S::::::SSSSSS:::::S
+S:::::::::::::::SS                  B::::::::::::::::B      UU:::::::::UU    S:::::::::::::::SS 
+ SSSSSSSSSSSSSSS                    BBBBBBBBBBBBBBBBB         UUUUUUUUU       SSSSSSSSSSSSSSS   
+                                                                                                
+                                                                                                
+                                                                                                
+                                                                                                
+AUTO DATABASE SERVER BACKUP SERVICE                                                                                                
+                                                                                                
+                                                                                                
+"
+
+# exec ./script.sh 
+
+exec /bin/busybox sh
+
+# exec app2
